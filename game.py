@@ -63,7 +63,7 @@ class RockSlabFactory(object):
 class TextureRenderer(object):
     def __init__(self, app):
         self.app = app
-        self.buffer  = base.win.makeTextureBuffer("RoidSurface", 512, 512)
+        self.buffer  = base.win.makeTextureBuffer("RoidSurface", 1024*4, 1024*4)
         self.texture = self.buffer.getTexture()
         self.buffer.setSort(-100) #ensure this buffer is rendered before main window
         self.camera  = base.makeCamera2d(self.buffer)
@@ -86,14 +86,21 @@ class TextureRenderer(object):
         self.app.taskMgr.add(spinCameraTask, "SpinCameraTask")
     
     def test_many_sprites(self):
-        rocks = self.app.loader.loadTexture('rocks.png')
+        rocks = self.app.loader.loadTexture('dot16.png')
         card_maker = PM.CardMaker('rock_gen')
-        for i in range(-50, 50):
-            for j in range(-50, 50):
+        for i in range(-5, 5):
+            for j in range(-5, 5):
                 card_maker.setFrame(0, 0.1, 0, 0.1)
                 cur = self.scene.attachNewNode(card_maker.generate())
                 cur.setTexture(rocks)
-                cur.setPos(0.2*i, 100, 0.2*j)
+                cur.setPos(0.2*i, 2, 0.2*j)
+        
+        for i in range(-20, 20):
+            for j in range(-20, 20):
+                card_maker.setFrame(0, 0.01, 0, 0.01)
+                cur = self.scene.attachNewNode(card_maker.generate())
+                cur.setTexture(rocks)
+                cur.setPos(0.02*i, 1, 0.02*j)
 
 
 class App(ShowBase.ShowBase):
