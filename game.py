@@ -1,4 +1,5 @@
 import os, os.path
+import math
 
 from panda3d.core import Filename
 from panda3d import core
@@ -73,16 +74,29 @@ class RockSlabFactory(object):
             cur_slab.setY(i*spacing)
         stack_node_path.reparentTo(self.app.render)
         return stack_node_path
+    
+    def make_spheroid_stack(self, radius, num):
+        spacing = radius / (num - 2)
+        stack = PandaNode('stack')
+        stack_node_path = NodePath(stack)
+        for i in range(num):
+            cur_radius = radius*math.sin(math.acos( abs(1 - i*2.0/num) ))
+            cur_slab = self.make_slab(cur_radius, cur_radius)
+            #offset to center smaller items in sphere
+            offset = (radius - cur_radius)/2.0
+            cur_slab.setPos(offset, i*spacing, offset)
+        stack_node_path.reparentTo(self.app.render)
+        return stack_node_path
 
 class App(ShowBase.ShowBase):
     def __init__(self):
         ShowBase.ShowBase.__init__(self)
-        self.grid = make_grid("grid", 10, 10, 20, 10)
-        self.grid.setPos(0, 0, 0)
-        self.grid.reparentTo(self.render)
+        #self.grid = make_grid("grid", 10, 10, 20, 10)
+        #self.grid.setPos(0, 0, 0)
+        #self.grid.reparentTo(self.render)
         
         self.rock_fact = RockSlabFactory(self)
-        self.rock_fact.make_stack(30, 30, 5, 20)
+        self.rock_fact.make_spheroid_stack(200, 20)
         
         self.init_skybox()
         self.init_ui()
@@ -112,10 +126,10 @@ class App(ShowBase.ShowBase):
     
     def init_shaders(self):
         self.filters = CommonFilters(base.win, base.cam)
-        ok = self.filters.setBloom(blend=(0,0,0,1),
+        ok = self.filters.setBloom(#blend=(0,0,0,1),
                                    desat=-0.5,
-                                   intensity=3.0,
-                                   size="small")
+                                   intensity=0.45,
+                                   size="medium")
         if not ok:
             print "info: graphics card does not support shaders"
 
