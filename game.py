@@ -75,9 +75,9 @@ class RockSlabFactory(object):
         stack_node_path.reparentTo(self.app.render)
         return stack_node_path
     
-    def make_spheroid_stack(self, radius, num):
+    def make_spheroid_stack(self, radius, num, name='stack'):
         spacing = radius / (num - 2)
-        stack = PandaNode('stack')
+        stack = PandaNode(name)
         stack_node_path = NodePath(stack)
         for i in range(num):
             cur_radius = radius*math.sin(math.acos( abs(1 - i*2.0/num) ))
@@ -96,7 +96,12 @@ class App(ShowBase.ShowBase):
         #self.grid.reparentTo(self.render)
         
         self.rock_fact = RockSlabFactory(self)
-        self.rock_fact.make_spheroid_stack(200, 20)
+        for i in range(2):
+            a = self.rock_fact.make_spheroid_stack(100, 20, "name"+str(i))
+            a.setPos(0, 0, i*20)
+        
+        b = self.rock_fact.make_stack(20, 20, 4, 10)
+        b.setPos(100, 0, 0)
         
         self.init_skybox()
         self.init_ui()
