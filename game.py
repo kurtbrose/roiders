@@ -25,7 +25,8 @@ PM.getModelPath().appendPath(ASSET_DIR)
 class RockSlabFactory(object):
     def __init__(self, app):
         self.app = app
-        self.texture = app.loader.loadTexture('rocks.png')
+        #self.texture = app.loader.loadTexture('rocks.png')
+        self.texture = app.texture_renderer.texture
         self.card_maker = PM.CardMaker('rock_slab_gen')
     
     def make_slab(self, width, height):
@@ -60,24 +61,54 @@ class RockSlabFactory(object):
         return stack_node_path
 
 class TextureRenderer(object):
-    def __init__(self):
+    def __init__(self, app):
+        self.app = app
         self.buffer  = base.win.makeTextureBuffer("RoidSurface", 512, 512)
         self.texture = self.buffer.getTexture()
         self.buffer.setSort(-100) #ensure this buffer is rendered before main window
         self.camera  = base.makeCamera2d(self.buffer)
         self.scene   = NodePath("TextureScene")
         self.camera.reparentTo(self.scene)
+        
+    def test_texture_rendering(self):
+        ###lets try putting the tutorial scene into the texture
+        environ = self.app.loader.loadModel("models/environment")
+        environ.reparentTo(self.scene)
+        environ.setScale(0.25, 0.25, 0.25)
+        environ.setPos(-8, 42, 0)
+        # Define a procedure to move the camera.
+        def spinCameraTask(task):
+            angleDegrees = task.time * 6.0
+            angleRadians = angleDegrees * (math.pi / 180.0)
+            self.camera.setPos(20 * math.sin(angleRadians), -20.0 * math.cos(angleRadians), 3)
+            self.camera.setHpr(angleDegrees, 0, 0)
+            return Task.cont
+        self.app.taskMgr.add(spinCameraTask, "SpinCameraTask")
+    
+    def test_many_sprites(self):
+        rocks = self.app.loader.loadTexture('rocks.png')
+        card_maker = PM.CardMaker('rock_gen')
+        for i in range(-50, 50):
+            for j in range(-50, 50):
+                card_maker.setFrame(0, 0.1, 0, 0.1)
+                cur = self.scene.attachNewNode(card_maker.generate())
+                cur.setTexture(rocks)
+                cur.setPos(0.2*i, 100, 0.2*j)
 
 
 class App(ShowBase.ShowBase):
     def __init__(self):
         ShowBase.ShowBase.__init__(self)
-        self.texture_renderer = TextureRenderer()
+        self.texture_renderer = TextureRenderer(self)
+        self.texture_renderer.test_many_sprites()
         
         self.rock_fact = RockSlabFactory(self)
         for i in range(3):
             a = self.rock_fact.make_spheroid_stack(100, 20, "name"+str(i))
             a.setPos(150*i, 0, 0)
+        
+        s = self.rock_fact.make_slab(100, 100)
+        s.setPos(0, 200, 200)
         
         self.init_skybox()
         self.init_ui()
