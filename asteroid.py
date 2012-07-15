@@ -1,16 +1,8 @@
 '''
 This module contains functions for handling an abstract asteroid.
-An asteroid is represented internally as dimensions, plus a string of contents.
-
-Contents code:
-AA-MMMMMM
-
-AA = 00, vacuum
-AA = 01, unbreathable air: low pressure
-AA = 10, unbreathable air: high C02
-AA = 11, breathable air
 
 '''
+import array
 
 
 def generate_contents(x, y, z):
@@ -20,4 +12,15 @@ class Asteroid(object):
     def __init__(self, x, y, z, contents=None):
         pass
     
-    
+
+LEVEL_SIZE = 1000 #length and width of each asteroid level
+
+#need to figure out how to do pathfinding -- what kind of data structures required here?
+
+class Level(object):
+	'''
+	Represents one level of the asteroid.
+	'''
+	def __init__(self, contents=None):
+		self.contents = array.array('L')
+
