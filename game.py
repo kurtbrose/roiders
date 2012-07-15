@@ -86,6 +86,25 @@ class App(ShowBase.ShowBase):
             s.reparentTo(np)
         np.flattenStrong()
 
+        def replace_random(task):
+            import random
+            num = random.choice(range(121))
+            s = self.rock_fact.make_slab(10, 10)
+            s.setPos(200 +10*(num%11), 0, 200+10*(num/11))
+            #s.setTransparency(True)
+            if random.random() > 0.5:
+                s.setTexture(self.tex_mgr.arrow_out)
+                print 'aaaa'
+            #s.setBin("fixed", 40)
+            #s.setDepthTest(False)
+            #s.setDepthWrite(False)
+            s.reparentTo(np)
+            np.flattenStrong()
+            return task.again
+
+        self.taskMgr.doMethodLater(0.5, replace_random, 'replace_random')
+
+
         '''
         s = self.rock_fact.make_slab(100, 100)
         s1 = self.rock_fact.make_slab(100, 100)
