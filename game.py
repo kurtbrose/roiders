@@ -15,6 +15,10 @@ from pandac.PandaModules import OrthographicLens
 from pandac.PandaModules import LineSegs
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
+from pandac.PandaModules import TextureStage
+from pandac.PandaModules import Texture
+from pandac.PandaModules import Vec4
+from pandac.PandaModules import PNMImage
 
 #set up some loading constants
 DIR = str(Filename.fromOsSpecific(os.path.dirname(os.path.abspath(__file__))))
@@ -70,39 +74,12 @@ class App(ShowBase.ShowBase):
         
         self.rock_fact = RockSlabFactory(self)
         self.tex_mgr = TextureManager(self)
-        for i in range(3):
+        
+        for i in range(2):
             a = self.rock_fact.make_spheroid_stack(100, 20, "name"+str(i))
             a.setPos(150*i, 0, 0)
             a.flattenStrong()
         
-        np = NodePath(PandaNode('billboard'))
-        np.reparentTo(self.render)
-        for i in range(121):
-            s = self.rock_fact.make_slab(10, 10)
-            s.setPos(200+10*(i%11), 0, 200+10*(i/11))
-            s.setTransparency(True)
-            if i%2:
-                s.setTexture(self.tex_mgr.arrow_out)
-            s.reparentTo(np)
-        np.flattenStrong()
-
-        def replace_random(task):
-            import random
-            num = random.choice(range(121))
-            s = self.rock_fact.make_slab(10, 10)
-            s.setPos(200 +10*(num%11), 0, 200+10*(num/11))
-            #s.setTransparency(True)
-            if random.random() > 0.5:
-                s.setTexture(self.tex_mgr.arrow_out)
-                print 'aaaa'
-            #s.setBin("fixed", 40)
-            #s.setDepthTest(False)
-            #s.setDepthWrite(False)
-            s.reparentTo(np)
-            np.flattenStrong()
-            return task.again
-
-        self.taskMgr.doMethodLater(0.5, replace_random, 'replace_random')
 
 
         '''
@@ -128,7 +105,60 @@ class App(ShowBase.ShowBase):
         self.init_ui()
         #self.init_shaders()
         self.taskMgr.add(self.camera_task, "cameraTask")
-    
+
+        self.replace_random_test()
+
+    def replace_random_test(self):
+        SIZE = 33
+        np = NodePath(PandaNode('billboard'))
+        np.reparentTo(self.render)
+        #np.setPos(0, -1000, 0)
+        import time
+        a = time.time()
+        for i in range(SIZE*SIZE):
+            s = self.rock_fact.make_slab(10, 10)
+            s.reparentTo(np)
+            s.setPos(200+10*(i%SIZE), 0, 200+10*(i/SIZE))
+            #s.setTransparency(True)
+            if i%2:
+                s.setTexture(self.tex_mgr.arrow_out)
+        print time.time() - a
+        np.flattenStrong()
+        print time.time() - a
+
+        '''
+        eraser = TextureStage('eraser')
+        #eraser.setSort(1)
+        eraser.setCombineAlpha(TextureStage.CMReplace, TextureStage.CSConstant, TextureStage.COSrcAlpha)
+        eraser.setCombineRgb(TextureStage.CMAdd, TextureStage.CSTexture , TextureStage.COSrcColor, 
+                                                 TextureStage.CSPrevious, TextureStage.COSrcColor)
+        eraser.setColor(Vec4(0, 0, 0, 0.5))
+        blank = PNMImage(1,1)
+        blank.fillVal(0,0,0)
+        blanktex = Texture()
+        blanktex.load(blank)
+        '''
+        priority = [0]
+        def replace_random(task):
+            priority[0] += 1
+            for i in range(20):
+                import random
+                num = random.choice(range(SIZE*SIZE))
+                s = self.rock_fact.make_slab(10, 10)
+                s.reparentTo(np)
+                s.setPos(200 +10*(num%SIZE), 0, 200+10*(num/SIZE))
+                #TODO: what is wrong with coordinates?  what are these drawing in different location than initial slabs?
+                #s.setTransparency(True)
+                if random.random() > 0.5:
+                    s.setTexture(self.tex_mgr.arrow_out, priority[0])
+            np.flattenStrong()
+            #np.setTransparency(True)
+            #np.setTexture(eraser, blanktex)
+            return task.again
+
+        self.taskMgr.doMethodLater(0.3, replace_random, 'replace_random')
+
+
     def camera_task(self, task):
         #re-center skybox after every camera move
         camPos = camera.getPos(render)
