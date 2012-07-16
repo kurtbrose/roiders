@@ -156,7 +156,7 @@ class App(ShowBase.ShowBase):
             #np.setTexture(eraser, blanktex)
             return task.again
 
-        self.taskMgr.doMethodLater(0.1*y+1/(10+y), replace_random, 'replace_random')
+        #self.taskMgr.doMethodLater(0.1*y+1/(10+y), replace_random, 'replace_random')
 
 
     def camera_task(self, task):
