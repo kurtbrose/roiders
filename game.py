@@ -106,27 +106,27 @@ class App(ShowBase.ShowBase):
         #self.init_shaders()
         self.taskMgr.add(self.camera_task, "cameraTask")
 
-        self.replace_random_test(0)
-        self.replace_random_test(100)
-        self.replace_random_test(200)
-        self.replace_random_test(300)
+        for i in range(25):
+            self.replace_random_test(100*i)
 
     def replace_random_test(self, y):
-        SIZE = 33
+        SIZE = 25
         np = NodePath(PandaNode('billboard'))
         np.reparentTo(self.render)
         #np.setPos(0, -1000, 0)
         s1 = self.rock_fact.make_slab(10, 10)
         s2 = self.rock_fact.make_slab(10, 10)
         s2.setTexture(self.tex_mgr.arrow_out)
+        nodes = []
         import time
         a = time.time()
         for i in range(SIZE*SIZE):
             cur = s1.copyTo(np) if i%2 else s2.copyTo(np)
             cur.setPos(200+10*(i%SIZE), y, 200+10*(i/SIZE))
+            nodes.append(cur)
             #s.setTransparency(True)
         print time.time() - a
-        np.flattenMedium()
+        #np.flattenMedium()
         print time.time() - a
 
         '''
@@ -141,22 +141,24 @@ class App(ShowBase.ShowBase):
         blanktex = Texture()
         blanktex.load(blank)
         '''
-        priority = [0]
+        import random
         def replace_random(task):
-            priority[0] += 1
             for i in range(20):
-                import random
                 num = random.choice(range(SIZE*SIZE))
+                nodes[num].setTexture(self.tex_mgr.arrow_out if random.random() > 0.5 else self.rock_fact.texture)
+                '''
                 cur = s1.copyTo(np) if random.random() > 0.5 else s2.copyTo(np)
                 cur.setPos(200 +10*(num%SIZE), y, 200+10*(num/SIZE))
+                '''
                 #TODO: what is wrong with coordinates?  what are these drawing in different location than initial slabs?
                 #s.setTransparency(True)
-            np.flattenMedium()
+            #np.flattenMedium()
             #np.setTransparency(True)
             #np.setTexture(eraser, blanktex)
             return task.again
 
-        #self.taskMgr.doMethodLater(0.1*y+1/(10+y), replace_random, 'replace_random')
+        if y < 500:
+            self.taskMgr.doMethodLater(0.3, replace_random, 'replace_random')
 
 
     def camera_task(self, task):
