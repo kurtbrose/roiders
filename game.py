@@ -11,14 +11,10 @@ from direct.gui.DirectGui import *
 from direct.filter.CommonFilters import CommonFilters
 
 from pandac import PandaModules as PM
-from pandac.PandaModules import OrthographicLens
-from pandac.PandaModules import LineSegs
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
-from pandac.PandaModules import TextureStage
-from pandac.PandaModules import Texture
-from pandac.PandaModules import Vec4
-from pandac.PandaModules import PNMImage
+
+import asteroid
 
 #set up some loading constants
 DIR = str(Filename.fromOsSpecific(os.path.dirname(os.path.abspath(__file__))))
@@ -29,6 +25,7 @@ PM.getModelPath().appendPath(ASSET_DIR)
 class TextureManager(object):
     def __init__(self, app):
         self.arrow_out = app.loader.loadTexture('icons/arrow_out.png')
+        self.rocks = app.loader.loadTexture('rocks.png')
 
 class RockSlabFactory(object):
     def __init__(self, app):
@@ -75,39 +72,41 @@ class App(ShowBase.ShowBase):
         self.rock_fact = RockSlabFactory(self)
         self.tex_mgr = TextureManager(self)
         
+        '''
         for i in range(2):
             a = self.rock_fact.make_spheroid_stack(100, 20, "name"+str(i))
             a.setPos(150*i, 0, 0)
             a.flattenStrong()
-        
-
-
-        '''
-        s = self.rock_fact.make_slab(100, 100)
-        s1 = self.rock_fact.make_slab(100, 100)
-        s.setPos(0, 200, 200)
-        s1.setPos(0, 200, 300)
-        np = NodePath(PandaNode('billboard'))
-        np.reparentTo(self.render)
-        s.reparentTo(np)
-        s1.reparentTo(np)
-        s1.setTexture(self.tex_mgr.arrow_out)
-        s1.setTransparency(True)
-        np.flattenStrong()
-        #s1.removeNode()
-        s2 = self.rock_fact.make_slab(100, 100)
-        s2.setPos(0, 200, 300)
-        s2.reparentTo(np)
         '''
 
-        
         self.init_skybox()
         self.init_ui()
         #self.init_shaders()
         self.taskMgr.add(self.camera_task, "cameraTask")
+        a = asteroid.Asteroid()
+        a.nodepath.reparentTo(self.render)
+        arrowout = asteroid.TileType(self.tex_mgr.arrow_out)
+        rocks = asteroid.TileType(self.tex_mgr.rocks)
+        '''
+        for i in range(a.width):
+            for j in range(a.height):
+                for k in range(a.depth):
+                    a.update(i, j, k, arrowout)
+        '''
 
+        import random
+        def replace_random(task):
+            for i in range(20):
+                x = random.randint(0, a.width-1)
+                y = random.randint(0, a.height-1)
+                z = random.randint(0, a.depth-1)
+                a.update(x, y, z, rocks)
+            return task.again
+        self.taskMgr.doMethodLater(0.3, replace_random, 'replace_random')
+        '''
         for i in range(25):
             self.replace_random_test(100*i)
+        '''
 
     def replace_random_test(self, y):
         SIZE = 25
