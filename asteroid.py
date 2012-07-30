@@ -7,6 +7,8 @@ Performance is not a concern here.
 
 The main interface is the Asteroid class.
 '''
+import math
+
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import CardMaker
@@ -14,7 +16,7 @@ from pandac.PandaModules import CardMaker
 LEVEL_SPACING = 50
 TILE_SIZE  = 10
 TILE_GRP_SIZE = 5 #length and width of each tile group (grouped for performance)
-LEVEL_SIZE = 7 #length and width of each asteroid level, in tile groups
+LEVEL_SIZE = 9 #length and width of each asteroid level, in tile groups
 
 NUM_LEVELS = 12
 
@@ -55,9 +57,33 @@ class Asteroid(object):
 		for i in range(NUM_LEVELS):
 			self.levels[i].nodepath.setPos(0, i*LEVEL_SPACING, 0)
 
+	@classmethod
+	def make_spheroid(cls, tile_type, name="Asteroid"):
+		self = cls(name)
+		z_scale = NUM_LEVELS+1
+		y_scale = x_scale = TILE_GRP_SIZE * LEVEL_SIZE
+		for i in range(NUM_LEVELS):
+			for x in range(x_scale):
+				for y in range(y_scale):
+					distance = ((0.5 - 1.0*(i+1)/z_scale)**2 + 
+								(0.5-1.0*x/x_scale)**2 + 
+								(0.5-1.0*y/y_scale)**2)**0.5
+					if i == 0:#NUM_LEVELS-1:
+						import random
+						if random.random() > 0.95:
+							print "{0},{1},{2} -- {3}".format(x,y,i,distance)
+					if distance < 0.5:
+						self.update(x, y, i, tile_type)
+		self.redraw()
+		return self
+
 	def update(self, x, y, level, tile_type):
 		self.contents[level][y][x] = tile_type
 		self.levels[level].update(x, y, tile_type.texture)
+
+	def redraw(self):
+		for level in self.levels:
+			level.redraw()
 
 	@property
 	def width(self): return self._width
@@ -91,6 +117,11 @@ class Level(object):
 	def update(self, x, y, texture):
 		tgs = TILE_GRP_SIZE
 		self.tile_groups[x/tgs][y/tgs].update(x%tgs, y%tgs, texture)
+
+	def redraw(self):
+		for row in self.tile_groups:
+			for tile_group in row:
+				tile_group.redraw()
 		
 
 class TileGroup(object):
@@ -100,9 +131,16 @@ class TileGroup(object):
 		self.nodepath = NodePath(PandaNode(self.name))
 		self.textures = [[None]*TILE_GRP_SIZE for i in range(TILE_GRP_SIZE)]
 		self.nodepath.reparentTo(self.parent.nodepath)
+		self.dirty = False
 
 	def update(self, x, y, texture):
-		self.textures[x][y] = texture
+		if self.textures[x][y] != texture:
+			self.textures[x][y] = texture
+			self.dirty = True
+
+	def redraw(self):
+		if not self.dirty:
+			return #nothing has changed, no need to redraw
 		container = NodePath(PandaNode(self.name+"container"))
 		for i in range(TILE_GRP_SIZE):
 			for j in range(TILE_GRP_SIZE):
@@ -116,6 +154,7 @@ class TileGroup(object):
 		for child in self.nodepath.getChildren():
 			child.removeNode()
 		container.reparentTo(self.nodepath)
+		self.dirty = False
 
 
 

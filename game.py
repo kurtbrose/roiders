@@ -83,15 +83,16 @@ class App(ShowBase.ShowBase):
         self.init_ui()
         #self.init_shaders()
         self.taskMgr.add(self.camera_task, "cameraTask")
-        a = asteroid.Asteroid()
-        a.nodepath.reparentTo(self.render)
         arrowout = asteroid.TileType(self.tex_mgr.arrow_out)
         rocks = asteroid.TileType(self.tex_mgr.rocks)
+        a = asteroid.Asteroid.make_spheroid(arrowout)
+        a.nodepath.reparentTo(self.render)
         '''
         for i in range(a.width):
             for j in range(a.height):
                 for k in range(a.depth):
                     a.update(i, j, k, arrowout)
+        a.redraw()
         '''
 
         import random
@@ -101,6 +102,7 @@ class App(ShowBase.ShowBase):
                 y = random.randint(0, a.height-1)
                 z = random.randint(0, a.depth-1)
                 a.update(x, y, z, rocks)
+            a.redraw()
             return task.again
         self.taskMgr.doMethodLater(0.3, replace_random, 'replace_random')
         '''
