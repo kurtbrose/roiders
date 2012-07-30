@@ -7,8 +7,6 @@ Performance is not a concern here.
 
 The main interface is the Asteroid class.
 '''
-import math
-
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import CardMaker
@@ -33,7 +31,8 @@ class ObjectType(object):
 	pass
 
 class Creature(object):
-	pass
+	def __init__(self):
+		pass
 
 class Robot(Creature):
 	pass
@@ -68,10 +67,6 @@ class Asteroid(object):
 					distance = ((0.5 - 1.0*(i+1)/z_scale)**2 + 
 								(0.5-1.0*x/x_scale)**2 + 
 								(0.5-1.0*y/y_scale)**2)**0.5
-					if i == 0:#NUM_LEVELS-1:
-						import random
-						if random.random() > 0.95:
-							print "{0},{1},{2} -- {3}".format(x,y,i,distance)
 					if distance < 0.5:
 						self.update(x, y, i, tile_type)
 		self.redraw()
