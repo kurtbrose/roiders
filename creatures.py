@@ -16,6 +16,7 @@ class Creature(object):
         node.setTwoSided(True)
         node.setTransparency(True)
         self.nodepath.setBillboardPointEye()
+        self.pos = None
 
 class Robot(Creature):
     texture = resource.TEXTURES.asterisk_orange

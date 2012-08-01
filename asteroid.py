@@ -39,7 +39,7 @@ class Asteroid(object):
 		self._width  = TILE_GRP_SIZE * LEVEL_SIZE
 		self._height = TILE_GRP_SIZE * LEVEL_SIZE
 		self._depth  = NUM_LEVELS
-		self.contents = [[[None]*self.width 
+		self.contents = [[[None]*(self.width) 
 							for i in range(self.height)]
 							for j in range(self.depth)]
 		self.levels = [Level(self, i) for i in range(NUM_LEVELS)]

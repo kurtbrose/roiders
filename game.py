@@ -1,3 +1,6 @@
+import itertools
+import random
+
 from direct.showbase import ShowBase
 from direct.task import Task
 from direct.gui.DirectGui import *
@@ -6,6 +9,7 @@ from direct.interval.IntervalGlobal import Parallel
 
 #for now: one "turn" = 0.3 seconds
 #at the end of each turn, 
+TURN_LEN = 0.3
 
 class App(ShowBase.ShowBase):
     def __init__(self):
@@ -22,20 +26,37 @@ class App(ShowBase.ShowBase):
         self.asteroid = asteroid.Asteroid.make_spheroid(rocks)
         self.asteroid.nodepath.reparentTo(self.render)
 
-        import random
-        creatures = sum([[c() for i in range(100)] 
+        self.creatures = sum([[c() for i in range(100)] 
             for c in (creatures.Human, creatures.Robot)], []) 
-        intervals = []
-        for robot in creatures:
-            robot.nodepath.reparentTo(self.render)
-            robot.nodepath.setPos(random.random()*100, random.random()*100, 30)
-            goto = PM.Point3(
-                random.random()*1000, 
-                random.random()*1000, 
-                random.random()*1000)
-            intervals.append(robot.nodepath.posInterval(10.0, goto))
-        Parallel(*intervals, name="move_robots").start()
+        for creature in self.creatures:
+            creature.pos = (10, 10, 10)
+            creature.nodepath.reparentTo(self.render)
 
+        self.start()
+
+    def start(self):
+        self.taskMgr.doMethodLater(TURN_LEN, self.do_turn, 'do_turn')
+
+    def do_turn(self, task):
+        moves = []
+        for creature in self.creatures:
+            x, y, z = creature.pos
+            neighbors = []
+            for n in list(itertools.product(
+                        (x-1, x, x+1), (y-1, y, y+1), (z-1, z, z+1))):
+                x2, y2, z2 = n
+                x2 = max(min(x2, self.asteroid.width-1), 0)
+                y2 = max(min(y2, self.asteroid.height-1), 0)
+                z2 = max(min(z2, self.asteroid.depth-1), 0)
+                if self.asteroid.contents[z2][x2][y2]:
+                    neighbors.append((x2, y2, z2))
+            next = random.choice(neighbors)
+            moves.append(creature.nodepath.posInterval(TURN_LEN, 
+                self.asteroid.get_pos(*next)))
+            creature.pos = next
+
+        Parallel(*moves, name="creature_moves").start()
+        return Task.again
 
     def camera_task(self, task):
         #re-center skybox after every camera move
