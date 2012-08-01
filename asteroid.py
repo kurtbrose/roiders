@@ -30,16 +30,6 @@ class TileType(object):
 class ObjectType(object):
 	pass
 
-class Creature(object):
-	def __init__(self):
-		pass
-
-class Robot(Creature):
-	pass
-
-class Human(Creature):
-	pass
-
 class Asteroid(object):
 	def __init__(self, name="Asteroid"):
 		self.name = name
@@ -79,6 +69,13 @@ class Asteroid(object):
 	def redraw(self):
 		for level in self.levels:
 			level.redraw()
+
+	def get_pos(self, x, y, level):
+		'convert asteroid coordinates to position'
+		pos_x, pos_y, pos_z = self.nodepath.getPos()
+		return (pos_x + TILE_SIZE*x, 
+			    pos_y + level * LEVEL_SPACING, 
+			    pos_z + TILE_SIZE*y)
 
 	@property
 	def width(self): return self._width
@@ -150,13 +147,3 @@ class TileGroup(object):
 			child.removeNode()
 		container.reparentTo(self.nodepath)
 		self.dirty = False
-
-
-
-def init_textures(app):
-	TEXTURES['blank'] = app.loader.loadTexture('icons/arrow_out.png')
-	TILE_TYPES['empty'] = TEXTURES['blank']
-
-TEXTURES = {}
-
-TILE_TYPES = {}
