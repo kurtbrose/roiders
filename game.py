@@ -26,7 +26,7 @@ class App(ShowBase.ShowBase):
         asteroid.tunnel(self.asteroid)
         self.asteroid.nodepath.reparentTo(self.render)
 
-        self.creatures = sum([[c() for i in range(100)] 
+        self.creatures = sum([[c() for i in range(10)] 
             for c in (creatures.Human, creatures.Robot)], []) 
         for creature in self.creatures:
             creature.pos = (0, 0, 0)
@@ -38,29 +38,18 @@ class App(ShowBase.ShowBase):
         self.taskMgr.doMethodLater(TURN_LEN, self.do_turn, 'do_turn')
 
     def do_turn(self, task):
-        import asteroid
-
         moves = []
-        for creature in self.creatures[:1]:
+        for creature in self.creatures:
             if not creature.cur_path:
-                '''
                 x = random.randint(0, self.asteroid.width-1)
                 y = random.randint(0, self.asteroid.height-1)
                 z = random.randint(0, self.asteroid.depth-1)
-                while self.asteroid.get(x, y, z).__class__ != asteroid.Empty:
-                    x += 1
-                    if x == self.asteroid.width-1:
-                        x = 0
-                        y += 1
-                        if y == self.asteroid.height-1:
-                            y = 0
-                            z += 1
-                            if z == self.asteroid.depth-1:
-                                x,y,z = 0,0,0
-                                break
-                '''
-                x,y,z = 0,0,10
-                creature.goto((x,y,z), self.asteroid)
+                if random.random() > 0.5:
+                    x = self.asteroid.width/2
+                    y = self.asteroid.height/2
+                tile = self.asteroid.get(x,y,z)
+                if tile and tile.passable:
+                    creature.goto((x,y,z), self.asteroid)
             if creature.cur_path:
                 next = creature.cur_path.pop()
                 moves.append(creature.nodepath.posInterval(TURN_LEN, 

@@ -18,9 +18,9 @@ import resource
 LEVEL_SPACING = 50
 TILE_SIZE  = 10
 TILE_GRP_SIZE = 5 #length and width of each tile group (grouped for performance)
-LEVEL_SIZE = 5 #length and width of each asteroid level, in tile groups
+LEVEL_SIZE = 7 #length and width of each asteroid level, in tile groups
 
-NUM_LEVELS = 10
+NUM_LEVELS = 12
 
 CARD_MAKER = CardMaker('tile_generator')
 CARD_MAKER.setFrame(0, TILE_SIZE, 0, TILE_SIZE)
