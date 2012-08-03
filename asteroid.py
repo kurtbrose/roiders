@@ -7,16 +7,20 @@ Performance is not a concern here.
 
 The main interface is the Asteroid class.
 '''
+import random
+
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import CardMaker
 
+import resource
+
 LEVEL_SPACING = 50
 TILE_SIZE  = 10
 TILE_GRP_SIZE = 5 #length and width of each tile group (grouped for performance)
-LEVEL_SIZE = 9 #length and width of each asteroid level, in tile groups
+LEVEL_SIZE = 5 #length and width of each asteroid level, in tile groups
 
-NUM_LEVELS = 12
+NUM_LEVELS = 10
 
 CARD_MAKER = CardMaker('tile_generator')
 CARD_MAKER.setFrame(0, TILE_SIZE, 0, TILE_SIZE)
@@ -24,11 +28,22 @@ CARD_MAKER.setFrame(0, TILE_SIZE, 0, TILE_SIZE)
 #need to figure out how to do pathfinding -- what kind of data structures required here?
 
 class TileType(object):
-	def __init__(self, texture):
-		self.texture = texture
+	texture = None
 
-class ObjectType(object):
-	pass
+class Empty(TileType):
+	def __init__(self):
+		self.passable = True
+
+class Natural(TileType):
+	def __init__(self):
+		self.passable = False
+
+	def tunnel(self, direction):
+		self.passable = True # TODO: figure out how to draw the tunnel
+
+class Rock(Natural):
+	texture = resource.TEXTURES.rocks
+
 
 class Asteroid(object):
 	def __init__(self, name="Asteroid"):
@@ -39,9 +54,9 @@ class Asteroid(object):
 		self._width  = TILE_GRP_SIZE * LEVEL_SIZE
 		self._height = TILE_GRP_SIZE * LEVEL_SIZE
 		self._depth  = NUM_LEVELS
-		self.contents = [[[None]*(self.width) 
-							for i in range(self.height)]
-							for j in range(self.depth)]
+		self.contents = [[[Empty() for i in range(self.width)] 
+							       for j in range(self.height)]
+							       for k in range(self.depth)]
 		self.levels = [Level(self, i) for i in range(NUM_LEVELS)]
 		for i in range(NUM_LEVELS):
 			self.levels[i].nodepath.setPos(0, i*LEVEL_SPACING, 0)
@@ -85,6 +100,12 @@ class Asteroid(object):
 
 	@property
 	def depth(self): return self._depth
+
+	def get(self, x, y, level):
+		try:
+			return self.contents[level][y][x]
+		except IndexError:
+			return None
 
 
 class Level(object):
@@ -147,3 +168,23 @@ class TileGroup(object):
 			child.removeNode()
 		container.reparentTo(self.nodepath)
 		self.dirty = False
+
+
+def tunnel(asteroid):
+	'cut out pieces of the asteroid; allow for pathing tests'
+	#dig the initial tunnel through center of mass
+	for z in range(asteroid.depth):
+		asteroid.update(asteroid.width/2, asteroid.height/2, z, Empty())
+	for i in range(20):
+		#make a bunch of random cuts that intersect the tunnel
+		if random.random() > 0.5:
+			ys = range(0, asteroid.height/2)
+			xs = [asteroid.width/2]*len(ys)
+		else:
+			xs = range(0, asteroid.width/2)
+			ys = [asteroid.height/2]*len(xs)
+		zs = [random.randint(0, asteroid.depth-1)]*len(ys)
+		for x, y, z in zip(xs, ys, zs):
+			asteroid.update(x,y,z,Empty())
+	asteroid.redraw()
+

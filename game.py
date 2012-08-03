@@ -22,14 +22,14 @@ class App(ShowBase.ShowBase):
         self.init_skybox()
         self.init_ui()
         self.taskMgr.add(self.camera_task, "cameraTask")
-        rocks = asteroid.TileType(resource.TEXTURES.rocks)
-        self.asteroid = asteroid.Asteroid.make_spheroid(rocks)
+        self.asteroid = asteroid.Asteroid.make_spheroid(asteroid.Rock())
+        asteroid.tunnel(self.asteroid)
         self.asteroid.nodepath.reparentTo(self.render)
 
         self.creatures = sum([[c() for i in range(100)] 
             for c in (creatures.Human, creatures.Robot)], []) 
         for creature in self.creatures:
-            creature.pos = (10, 10, 10)
+            creature.pos = (0, 0, 0)
             creature.nodepath.reparentTo(self.render)
 
         self.start()
@@ -38,24 +38,36 @@ class App(ShowBase.ShowBase):
         self.taskMgr.doMethodLater(TURN_LEN, self.do_turn, 'do_turn')
 
     def do_turn(self, task):
-        moves = []
-        for creature in self.creatures:
-            x, y, z = creature.pos
-            neighbors = []
-            for n in list(itertools.product(
-                        (x-1, x, x+1), (y-1, y, y+1), (z-1, z, z+1))):
-                x2, y2, z2 = n
-                x2 = max(min(x2, self.asteroid.width-1), 0)
-                y2 = max(min(y2, self.asteroid.height-1), 0)
-                z2 = max(min(z2, self.asteroid.depth-1), 0)
-                if self.asteroid.contents[z2][x2][y2]:
-                    neighbors.append((x2, y2, z2))
-            next = random.choice(neighbors)
-            moves.append(creature.nodepath.posInterval(TURN_LEN, 
-                self.asteroid.get_pos(*next)))
-            creature.pos = next
+        import asteroid
 
-        Parallel(*moves, name="creature_moves").start()
+        moves = []
+        for creature in self.creatures[:1]:
+            if not creature.cur_path:
+                '''
+                x = random.randint(0, self.asteroid.width-1)
+                y = random.randint(0, self.asteroid.height-1)
+                z = random.randint(0, self.asteroid.depth-1)
+                while self.asteroid.get(x, y, z).__class__ != asteroid.Empty:
+                    x += 1
+                    if x == self.asteroid.width-1:
+                        x = 0
+                        y += 1
+                        if y == self.asteroid.height-1:
+                            y = 0
+                            z += 1
+                            if z == self.asteroid.depth-1:
+                                x,y,z = 0,0,0
+                                break
+                '''
+                x,y,z = 0,0,10
+                creature.goto((x,y,z), self.asteroid)
+            if creature.cur_path:
+                next = creature.cur_path.pop()
+                moves.append(creature.nodepath.posInterval(TURN_LEN, 
+                    self.asteroid.get_pos(*next)))
+                creature.pos = next
+        if moves:
+            Parallel(*moves, name="creature_moves").start()
         return Task.again
 
     def camera_task(self, task):
