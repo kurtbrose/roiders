@@ -48,41 +48,36 @@ class Rock(Natural):
 class Asteroid(object):
 	def __init__(self, name="Asteroid"):
 		self.name = name
-		#root nodepath for asteroid
 		self.nodepath = NodePath(PandaNode("Asteroid"+name))
-		#initialize with empty contents
-		self._width  = TILE_GRP_SIZE * LEVEL_SIZE
-		self._height = TILE_GRP_SIZE * LEVEL_SIZE
-		self._depth  = NUM_LEVELS
-		self.contents = [[[Empty() for i in range(self.width)] 
-							       for j in range(self.height)]
-							       for k in range(self.depth)]
-		self.levels = [Level(self, i) for i in range(NUM_LEVELS)]
-		for i in range(NUM_LEVELS):
-			self.levels[i].nodepath.setPos(0, i*LEVEL_SPACING, 0)
+		self.contents = {}
+		self.levels = {}
 
 	@classmethod
-	def make_spheroid(cls, tile_type, name="Asteroid"):
+	def make_spheroid(cls, tile_type, radius=25, name="Asteroid"):
 		self = cls(name)
-		z_scale = NUM_LEVELS+1
-		y_scale = x_scale = TILE_GRP_SIZE * LEVEL_SIZE
-		for i in range(NUM_LEVELS):
-			for x in range(x_scale):
-				for y in range(y_scale):
-					distance = ((0.5 - 1.0*(i+1)/z_scale)**2 + 
-								(0.5-1.0*x/x_scale)**2 + 
-								(0.5-1.0*y/y_scale)**2)**0.5
-					if distance < 0.5:
-						self.update(x, y, i, tile_type)
+		z_scale = 2
+		z_len = int(radius/z_scale)
+		for z in range(-z_len, z_len):
+			for x in range(-radius, radius):
+				for y in range(-radius, radius):
+					dist = ((z*z_scale)**2+x**2+y**2)**0.5
+					if dist < radius:
+						self.update(x,y,z, tile_type())
+					elif dist < radius + 3:
+						self.update(x,y,z, Empty())
 		self.redraw()
 		return self
 
 	def update(self, x, y, level, tile_type):
-		self.contents[level][y][x] = tile_type
+		pos = (x,y,level)
+		self.contents[pos] = tile_type
+		if level not in self.levels:
+			self.levels[level] = Level(self, level)
+			self.levels[level].nodepath.setPos(0, level*LEVEL_SPACING, 0)
 		self.levels[level].update(x, y, tile_type.texture)
 
 	def redraw(self):
-		for level in self.levels:
+		for level in self.levels.values():
 			level.redraw()
 
 	def get_pos(self, x, y, level):
@@ -92,21 +87,8 @@ class Asteroid(object):
 			    pos_y + level * LEVEL_SPACING, 
 			    pos_z + TILE_SIZE*(y+0.5))
 
-	@property
-	def width(self): return self._width
-
-	@property
-	def height(self): return self._height
-
-	@property
-	def depth(self): return self._depth
-
 	def get(self, x, y, level):
-		try:
-			return self.contents[level][y][x]
-		except IndexError:
-			return None
-
+		return self.contents.get((x,y,level))
 
 class Level(object):
 	'''
@@ -118,23 +100,21 @@ class Level(object):
 		self.name = "{0}-Level#{1}".format(parent.name, num)
 		#create one root nodepath for the overall level
 		self.nodepath = NodePath(PandaNode(self.name))
-		self.tile_groups = [[TileGroup(self, i, j) 
-							for i in range(LEVEL_SIZE)] 
-							for j in range(LEVEL_SIZE)]
-		step = TILE_GRP_SIZE * TILE_SIZE
-		for i in range(LEVEL_SIZE):
-			for j in range(LEVEL_SIZE):
-				self.tile_groups[i][j].nodepath.setPos(i*step, 0, j*step)
+		self.tile_groups = {}
 		self.nodepath.reparentTo(self.parent.nodepath)
 		
 	def update(self, x, y, texture):
 		tgs = TILE_GRP_SIZE
-		self.tile_groups[x/tgs][y/tgs].update(x%tgs, y%tgs, texture)
+		tg_pos = tg_x, tg_y = x/tgs, y/tgs
+		if tg_pos not in self.tile_groups:
+			self.tile_groups[tg_pos] = TileGroup(self, tg_x, tg_y)
+			scale = TILE_GRP_SIZE * TILE_SIZE
+			self.tile_groups[tg_pos].nodepath.setPos(tg_x*scale, 0, tg_y*scale)
+		self.tile_groups[tg_pos].update(x%tgs, y%tgs, texture)
 
 	def redraw(self):
-		for row in self.tile_groups:
-			for tile_group in row:
-				tile_group.redraw()
+		for tg in self.tile_groups.values():
+			tg.redraw()
 		
 
 class TileGroup(object):
@@ -173,17 +153,17 @@ class TileGroup(object):
 def tunnel(asteroid):
 	'cut out pieces of the asteroid; allow for pathing tests'
 	#dig the initial tunnel through center of mass
-	for z in range(asteroid.depth):
-		asteroid.update(asteroid.width/2, asteroid.height/2, z, Empty())
+	for z in range(-NUM_LEVELS, NUM_LEVELS):
+		asteroid.update(0, 0, z, Empty())
 	for i in range(20):
 		#make a bunch of random cuts that intersect the tunnel
+		ys = range(0, TILE_GRP_SIZE * LEVEL_SIZE/2)
+		xs = [0]*len(ys)
 		if random.random() > 0.5:
-			ys = range(0, asteroid.height/2)
-			xs = [asteroid.width/2]*len(ys)
-		else:
-			xs = range(0, asteroid.width/2)
-			ys = [asteroid.height/2]*len(xs)
-		zs = [random.randint(0, asteroid.depth-1)]*len(ys)
+			ys = [-1*e for e in ys]
+		if random.random() > 0.5:
+			xs, ys = ys, xs
+		zs = [random.randint(0, NUM_LEVELS-1)]*len(ys)
 		for x, y, z in zip(xs, ys, zs):
 			asteroid.update(x,y,z,Empty())
 	asteroid.redraw()

@@ -22,7 +22,7 @@ class App(ShowBase.ShowBase):
         self.init_skybox()
         self.init_ui()
         self.taskMgr.add(self.camera_task, "cameraTask")
-        self.asteroid = asteroid.Asteroid.make_spheroid(asteroid.Rock())
+        self.asteroid = asteroid.Asteroid.make_spheroid(asteroid.Rock)
         asteroid.tunnel(self.asteroid)
         self.asteroid.nodepath.reparentTo(self.render)
 
@@ -41,12 +41,9 @@ class App(ShowBase.ShowBase):
         moves = []
         for creature in self.creatures:
             if not creature.cur_path:
-                x = random.randint(0, self.asteroid.width-1)
-                y = random.randint(0, self.asteroid.height-1)
-                z = random.randint(0, self.asteroid.depth-1)
-                if random.random() > 0.5:
-                    x = self.asteroid.width/2
-                    y = self.asteroid.height/2
+                x = random.randint(0, 25)
+                y = random.randint(0, 25)
+                z = random.randint(0, 13)
                 tile = self.asteroid.get(x,y,z)
                 if tile and tile.passable:
                     creature.goto((x,y,z), self.asteroid)
