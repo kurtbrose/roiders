@@ -26,7 +26,7 @@ class App(ShowBase.ShowBase):
         asteroid.tunnel(self.asteroid)
         self.asteroid.nodepath.reparentTo(self.render)
 
-        self.creatures = sum([[c() for i in range(10)] 
+        self.creatures = sum([[c() for i in range(50)] 
             for c in (creatures.Human, creatures.Robot)], []) 
         for creature in self.creatures:
             creature.pos = (0, 0, 0)

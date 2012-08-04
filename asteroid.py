@@ -88,9 +88,9 @@ class Asteroid(object):
 	def get_pos(self, x, y, level):
 		'convert asteroid coordinates to position'
 		pos_x, pos_y, pos_z = self.nodepath.getPos()
-		return (pos_x + TILE_SIZE*x, 
+		return (pos_x + TILE_SIZE*(x+0.5), 
 			    pos_y + level * LEVEL_SPACING, 
-			    pos_z + TILE_SIZE*y)
+			    pos_z + TILE_SIZE*(y+0.5))
 
 	@property
 	def width(self): return self._width
