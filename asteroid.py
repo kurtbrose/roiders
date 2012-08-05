@@ -8,6 +8,7 @@ Performance is not a concern here.
 The main interface is the Asteroid class.
 '''
 import random
+import math
 
 from pandac.PandaModules import PandaNode
 from pandac.PandaModules import NodePath
@@ -15,12 +16,9 @@ from pandac.PandaModules import CardMaker
 
 import resource
 
-LEVEL_SPACING = 50
+LEVEL_SPACING = 100
 TILE_SIZE  = 10
 TILE_GRP_SIZE = 5 #length and width of each tile group (grouped for performance)
-LEVEL_SIZE = 7 #length and width of each asteroid level, in tile groups
-
-NUM_LEVELS = 12
 
 CARD_MAKER = CardMaker('tile_generator')
 CARD_MAKER.setFrame(0, TILE_SIZE, 0, TILE_SIZE)
@@ -53,9 +51,9 @@ class Asteroid(object):
 		self.levels = {}
 
 	@classmethod
-	def make_spheroid(cls, tile_type, radius=25, name="Asteroid"):
+	def make_spheroid(cls, tile_type, radius=30, name="Asteroid"):
 		self = cls(name)
-		z_scale = 2
+		z_scale = 10
 		z_len = int(radius/z_scale)
 		for z in range(-z_len, z_len):
 			for x in range(-radius, radius):
@@ -90,6 +88,14 @@ class Asteroid(object):
 	def get(self, x, y, level):
 		return self.contents.get((x,y,level))
 
+	def get_collision_pos(self, collision):
+		point3 = collision.getSurfacePoint(self.nodepath)
+		x = int(math.floor(point3.getX()/TILE_SIZE))
+		y = int(math.floor(point3.getZ()/TILE_SIZE))
+		z = int(round(point3.getY()/LEVEL_SPACING))
+		return x,y,z
+
+
 class Level(object):
 	'''
 	Represents one level of the asteroid.
@@ -118,6 +124,7 @@ class Level(object):
 		
 
 class TileGroup(object):
+	'group and flatten tiles, for rendering performance'
 	def __init__(self, parent, tile_x, tile_y):
 		self.parent = parent
 		self.name = "{0}:TileGroup({1},{2})".format(parent.name,tile_x, tile_y)
@@ -153,18 +160,19 @@ class TileGroup(object):
 def tunnel(asteroid):
 	'cut out pieces of the asteroid; allow for pathing tests'
 	#dig the initial tunnel through center of mass
-	for z in range(-NUM_LEVELS, NUM_LEVELS):
+	for z in range(-50, 50):
 		asteroid.update(0, 0, z, Empty())
-	for i in range(20):
+	for i in range(70):
 		#make a bunch of random cuts that intersect the tunnel
-		ys = range(0, TILE_GRP_SIZE * LEVEL_SIZE/2)
+		ys = range(0, 100)
 		xs = [0]*len(ys)
 		if random.random() > 0.5:
 			ys = [-1*e for e in ys]
 		if random.random() > 0.5:
 			xs, ys = ys, xs
-		zs = [random.randint(0, NUM_LEVELS-1)]*len(ys)
+		zs = [random.randint(-50, 50)]*len(ys)
 		for x, y, z in zip(xs, ys, zs):
-			asteroid.update(x,y,z,Empty())
+			if asteroid.get(x,y,z):
+				asteroid.update(x,y,z,Empty())
 	asteroid.redraw()
 

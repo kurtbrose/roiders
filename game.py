@@ -1,15 +1,51 @@
-import itertools
 import random
 
 from direct.showbase import ShowBase
 from direct.task import Task
 from direct.gui.DirectGui import *
-from pandac import PandaModules as PM
+from pandac.PandaModules import GeomNode
+from pandac.PandaModules import CollisionHandlerQueue
+from pandac.PandaModules import CollisionTraverser
+from pandac.PandaModules import CollisionRay
+from pandac.PandaModules import CollisionNode
 from direct.interval.IntervalGlobal import Parallel
 
 #for now: one "turn" = 0.3 seconds
 #at the end of each turn, 
 TURN_LEN = 0.3
+
+def mouse_ray():
+    'cast a ray from the current mouse position, find intersections'
+    if not app.mouseWatcherNode.hasMouse():
+        return None
+    mouse_pos = app.mouseWatcherNode.getMouse()
+    #cast a ray from the camera
+    app.picker_ray.setFromLens(app.camNode, mouse_pos.getX(), mouse_pos.getY())
+    #see if it hit anything in the scene graph
+    app.cTrav.traverse(app.render)
+    if app.collision_handler.getNumEntries() > 0:
+        #get closest collision
+        app.collision_handler.sortEntries()
+
+        for i in range(app.collision_handler.getNumEntries()):
+            hit = app.collision_handler.getEntry(i)
+            if app.asteroid.nodepath.isAncestorOf(hit.getIntoNodePath()):
+                x,y,z = app.asteroid.get_collision_pos(hit)
+                import asteroid
+                app.asteroid.update(x,y,z,asteroid.Empty())
+                app.asteroid.redraw()
+                print "coords", app.asteroid.get_collision_pos(hit)
+                break
+            else:
+                print hit.getIntoNodePath()
+        else:
+            print "missed"
+
+        #need to navigate up the node path, finding something with the right name
+    else:
+        print "nothing selected"
+        return None
+
 
 class App(ShowBase.ShowBase):
     def __init__(self):
@@ -31,6 +67,8 @@ class App(ShowBase.ShowBase):
         for creature in self.creatures:
             creature.pos = (0, 0, 0)
             creature.nodepath.reparentTo(self.render)
+
+        self.init_shader()
 
         self.start()
 
@@ -76,7 +114,19 @@ class App(ShowBase.ShowBase):
             text = ("ok!", "click!", "rolling over", "disabled"),
             scale = 0.05)
         self.test_button.setPos(base.a2dLeft, 0, base.a2dTop)
+        self.cTrav = CollisionTraverser('ui_collision_traverser')
+        self.collision_handler = CollisionHandlerQueue()
+        picker_node = CollisionNode('mouse_click_ray')
+        picker_node_path = camera.attachNewNode(picker_node)
+        picker_node.setFromCollideMask(GeomNode.getDefaultCollideMask())
+        self.picker_ray = CollisionRay()
+        picker_node.addSolid(self.picker_ray)
+        self.cTrav.addCollider(picker_node_path, self.collision_handler)
+
+        self.accept('a', mouse_ray)
     
+    def init_shader(self):
+        self.render.setShaderAuto()
 
 app = App()
 #PM.PStatClient.connect()
