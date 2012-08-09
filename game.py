@@ -1,4 +1,5 @@
 import random
+import time
 
 from direct.showbase import ShowBase
 from direct.task import Task
@@ -12,7 +13,10 @@ from direct.interval.IntervalGlobal import Parallel
 
 #for now: one "turn" = 0.3 seconds
 #at the end of each turn, 
-TURN_LEN = 0.3
+TICK_LEN = 0.1
+TICK_NUM = 0
+LAST_TICK = None
+AVG_TICK_LEN = TICK_LEN
 
 def mouse_ray():
     'cast a ray from the current mouse position, find intersections'
@@ -73,11 +77,25 @@ class App(ShowBase.ShowBase):
         self.start()
 
     def start(self):
-        self.taskMgr.doMethodLater(TURN_LEN, self.do_turn, 'do_turn')
+        global LAST_TICK
+        LAST_TICK = time.time()
+        self.taskMgr.doMethodLater(TICK_LEN, self.do_tick, 'do_tick')
 
-    def do_turn(self, task):
+    def do_tick(self, task):
+        #TODO: task takes negative time?  wtf?
+        global TICK_NUM, LAST_TICK, AVG_TICK_LEN
+        TICK_NUM += 1
+        cur_time = time.time()
+        start_time = cur_time
+        AVG_TICK_LEN = ((cur_time - LAST_TICK) + AVG_TICK_LEN)/2
+        LAST_TICK = cur_time
+        if TICK_NUM % 50 == 0:
+            print "average tick length", AVG_TICK_LEN
         moves = []
         for creature in self.creatures:
+            creature.action = (creature.action + 1) % creature.speed
+            if creature.action == 0:
+                continue
             if not creature.cur_path:
                 x = random.randint(0, 25)
                 y = random.randint(0, 25)
@@ -87,12 +105,14 @@ class App(ShowBase.ShowBase):
                     creature.goto((x,y,z), self.asteroid)
             if creature.cur_path:
                 next = creature.cur_path.pop()
-                moves.append(creature.nodepath.posInterval(TURN_LEN, 
+                moves.append(creature.nodepath.posInterval(
+                    AVG_TICK_LEN*(creature.speed-1), 
                     self.asteroid.get_pos(*next)))
                 creature.pos = next
         if moves:
-            Parallel(*moves, name="creature_moves").start()
-        return Task.again
+            Parallel(*moves, name="creature_moves "+str(TICK_NUM)).start()
+        duration = time.time() - start_time
+        self.taskMgr.doMethodLater(TICK_LEN - duration, self.do_tick, 'do_tick')
 
     def camera_task(self, task):
         #re-center skybox after every camera move

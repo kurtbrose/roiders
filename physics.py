@@ -1,5 +1,20 @@
-import numpy
+'''
+This module implements quick & dirty physics simulation that is feasible
+to do as the game runs.
 
+The method is a limited Finite Difference.
+At each time step, heat/pressure flows between adjacent nodes.
+
+Empirical testing of number of simulations and step size:
+(for a 50x50x50 simulation area)
+1, 19ms
+2, 32ms
+3, 57ms
+
+Experiments with thread showed no performance benefite.
+(Maybe numpy already multi-threads basic array operations?)
+'''
+import numpy
 
 class Simulation(object):
     def __init__(self, values, resistances, capacities):
@@ -22,6 +37,8 @@ class Simulation(object):
         self.res_y = (self.resistances[:,:-1,:] + self.resistances[:,1:,:])/2
         self.res_z = (self.resistances[:,:,:-1] + self.resistances[:,:,1:])/2
 
+        self.thread = None
+
     def step(self):
         #TODO: can the number of matrix operations be reduced?
         diff_x = self.values[1:,:,:] - self.values[:-1,:,:]
@@ -40,13 +57,23 @@ class Simulation(object):
         self.values[  :,  :, 1:] -= in_out_flow     / self.capacities[  :,  :, 1:]
 
 
+
 def test():
-    zero_plane = [[0,0,0]]*3
-    hot_plane  = [[0,0,0],[0,100,0],[0,0,0]]
-    values = [zero_plane, hot_plane, zero_plane]
-    resistances = [[[10]*3]*3]*3
-    capacities  = [[[10]*3]*3]*3
+    import copy
+    zero_plane = [[0]*50]*50
+    hot_plane  = copy.deepcopy(zero_plane)
+    hot_plane[25][25] = 100
+    values = [zero_plane] * 50
+    values[25] = hot_plane
+    resistances = [[[10]*50]*50]*50
+    capacities  = [[[10]*50]*50]*50
     s = Simulation(values, resistances, capacities)
-    for i in range(10):
-        print s.values
+    s2 = Simulation(values, resistances, capacities)
+    s3 = Simulation(values, resistances, capacities)
+    import time
+    for i in range(200):
+        a = time.time()
         s.step()
+        s2.step()
+        s3.step()
+        print time.time() - a

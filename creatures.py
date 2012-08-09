@@ -1,4 +1,5 @@
 import heapq
+import random
 
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import CardMaker
@@ -10,6 +11,7 @@ CREATURE_HEIGHT = 6
 CARD_MAKER = CardMaker('creature_generator')
 CARD_MAKER.setFrame(0, CREATURE_WIDTH, 0, CREATURE_HEIGHT)
 
+#TODO: Creatures should have a speed; they do not move every tick
 class Creature(object):
     def __init__(self):
         self.nodepath = NodePath(repr(self))
@@ -20,12 +22,17 @@ class Creature(object):
         self.nodepath.setBillboardPointEye()
         self.pos = None
         self.cur_path = []
+        #TODO: how to handle creatures actions?
+        self.speed = 4
+        self.action = random.randint(0, self.speed)
 
     def goto(self, pos, asteroid):
         self.cur_path = find_path(self.pos, pos, asteroid)
 
+
 class Robot(Creature):
     texture = resource.TEXTURES.asterisk_orange
+
 
 class Human(Creature):
     texture = resource.TEXTURES.user

@@ -1,18 +1,4 @@
-There are a lot of dependencies:
+Dependencies:
+Panda3D 1.7+
+numpy (for game physics)
 
-For rendering:
-I -- Panda3D version 1.7+
-For finite element analysis (i.e. heat/gas flow, radiation):
-II -- numpy, scipy, pysparse; these all have C/C++ components;
-google and download pre-compiled versions, trying to compile them is just pain
-III -- fipy -- pure python finite element library (has numpy+scipy+pysparse dependencies)
-
-
-Some issues with getting finite element simulation library working:
-
-1- pysparse library failed to import DLL's
-(manifested as itsolvers DLL failing to import)
-to fix this, use dependency walker, load the PYD file and see what dependencies
-are missing
-  A) ieshims.dll missing; solution: add "%ProgramFiles%\Internet Explorer" to Path
-  B) libiomp5.dll missnig; this is an OpenMP library; this was added to the roiders directory
