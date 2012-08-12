@@ -1,4 +1,4 @@
-Dependencies:
-Panda3D 1.7+
+Dependencies: (for 3D rendering)
 numpy (for game physics)
+wxwindows (for 2D UI)
 

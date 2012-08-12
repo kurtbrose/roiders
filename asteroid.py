@@ -16,7 +16,7 @@ from pandac.PandaModules import CardMaker
 
 import resource
 
-LEVEL_SPACING = 100
+LEVEL_SPACING = 25
 TILE_SIZE  = 10
 TILE_GRP_SIZE = 5 #length and width of each tile group (grouped for performance)
 
@@ -53,7 +53,7 @@ class Asteroid(object):
 	@classmethod
 	def make_spheroid(cls, tile_type, radius=30, name="Asteroid"):
 		self = cls(name)
-		z_scale = 10
+		z_scale = 4
 		z_len = int(radius/z_scale)
 		for z in range(-z_len, z_len):
 			for x in range(-radius, radius):

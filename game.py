@@ -38,17 +38,7 @@ def mouse_ray():
                 import asteroid
                 app.asteroid.update(x,y,z,asteroid.Empty())
                 app.asteroid.redraw()
-                print "coords", app.asteroid.get_collision_pos(hit)
                 break
-            else:
-                print hit.getIntoNodePath()
-        else:
-            print "missed"
-
-        #need to navigate up the node path, finding something with the right name
-    else:
-        print "nothing selected"
-        return None
 
 
 class App(ShowBase.ShowBase):
@@ -72,9 +62,8 @@ class App(ShowBase.ShowBase):
             creature.pos = (0, 0, 0)
             creature.nodepath.reparentTo(self.render)
 
-        self.init_shader()
-
         self.start()
+        self.setFrameRateMeter(True)
 
     def start(self):
         global LAST_TICK
@@ -82,7 +71,6 @@ class App(ShowBase.ShowBase):
         self.taskMgr.doMethodLater(TICK_LEN, self.do_tick, 'do_tick')
 
     def do_tick(self, task):
-        #TODO: task takes negative time?  wtf?
         global TICK_NUM, LAST_TICK, AVG_TICK_LEN
         TICK_NUM += 1
         cur_time = time.time()
@@ -112,7 +100,8 @@ class App(ShowBase.ShowBase):
         if moves:
             Parallel(*moves, name="creature_moves "+str(TICK_NUM)).start()
         duration = time.time() - start_time
-        self.taskMgr.doMethodLater(TICK_LEN - duration, self.do_tick, 'do_tick')
+        self.taskMgr.doMethodLater(
+            max(TICK_LEN-duration, 0), self.do_tick, 'do_tick')
 
     def camera_task(self, task):
         #re-center skybox after every camera move
@@ -144,9 +133,6 @@ class App(ShowBase.ShowBase):
         self.cTrav.addCollider(picker_node_path, self.collision_handler)
 
         self.accept('a', mouse_ray)
-    
-    def init_shader(self):
-        self.render.setShaderAuto()
 
 app = App()
 #PM.PStatClient.connect()
