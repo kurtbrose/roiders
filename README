@@ -1,4 +1,16 @@
-Dependencies: (for 3D rendering)
+Dependencies: 
+Panda3d 1.8+ (for 3D rendering)
 numpy (for game physics)
-wxwindows (for 2D UI)
+WxPython (for 2D UI)
 
+WxPython does not seem to play nice with Panda3D;
+need to run with system python instead of Panda3D bundled python;
+this requires a panda.pth file in the Python27 directory
+
+Contents of panda.pth file is simply 2 lines:
+C:\Panda3D-1.8.0 
+C:\Panda3D-1.8.0\bin
+
+This allows Panda3D to run from system Python.
+(PYTHONPATH variable should automatically be updated with Panda3D libraries
+by Panda3D installer)

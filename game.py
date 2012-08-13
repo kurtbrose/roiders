@@ -18,32 +18,9 @@ TICK_NUM = 0
 LAST_TICK = None
 AVG_TICK_LEN = TICK_LEN
 
-def mouse_ray():
-    'cast a ray from the current mouse position, find intersections'
-    if not app.mouseWatcherNode.hasMouse():
-        return None
-    mouse_pos = app.mouseWatcherNode.getMouse()
-    #cast a ray from the camera
-    app.picker_ray.setFromLens(app.camNode, mouse_pos.getX(), mouse_pos.getY())
-    #see if it hit anything in the scene graph
-    app.cTrav.traverse(app.render)
-    if app.collision_handler.getNumEntries() > 0:
-        #get closest collision
-        app.collision_handler.sortEntries()
-
-        for i in range(app.collision_handler.getNumEntries()):
-            hit = app.collision_handler.getEntry(i)
-            if app.asteroid.nodepath.isAncestorOf(hit.getIntoNodePath()):
-                x,y,z = app.asteroid.get_collision_pos(hit)
-                import asteroid
-                app.asteroid.update(x,y,z,asteroid.Empty())
-                app.asteroid.redraw()
-                break
-
-
 class App(ShowBase.ShowBase):
-    def __init__(self):
-        ShowBase.ShowBase.__init__(self)
+    def setup(self):
+        'to be called after window is initialized'
         import resource
         resource.init(self)
         import asteroid
@@ -105,7 +82,7 @@ class App(ShowBase.ShowBase):
 
     def camera_task(self, task):
         #re-center skybox after every camera move
-        camPos = camera.getPos(render)
+        camPos = self.camera.getPos(render)
         self.skybox.setPos(camPos)
         return Task.cont
     
@@ -126,15 +103,41 @@ class App(ShowBase.ShowBase):
         self.cTrav = CollisionTraverser('ui_collision_traverser')
         self.collision_handler = CollisionHandlerQueue()
         picker_node = CollisionNode('mouse_click_ray')
-        picker_node_path = camera.attachNewNode(picker_node)
+        picker_node_path = self.camera.attachNewNode(picker_node)
         picker_node.setFromCollideMask(GeomNode.getDefaultCollideMask())
         self.picker_ray = CollisionRay()
         picker_node.addSolid(self.picker_ray)
         self.cTrav.addCollider(picker_node_path, self.collision_handler)
 
-        self.accept('a', mouse_ray)
+        self.accept('a', self.mouse_ray)
 
-app = App()
-#PM.PStatClient.connect()
-app.run()
+        #testing input
+        import sys
+        self.accept('b', lambda: sys.stdout.write("b"))
 
+    def mouse_ray(app):
+        'cast a ray from the current mouse position, find intersections'
+        if not app.mouseWatcherNode.hasMouse():
+            return None
+        mouse_pos = app.mouseWatcherNode.getMouse()
+        #cast a ray from the camera
+        app.picker_ray.setFromLens(app.camNode, mouse_pos.getX(), mouse_pos.getY())
+        #see if it hit anything in the scene graph
+        app.cTrav.traverse(app.render)
+        if app.collision_handler.getNumEntries() > 0:
+            #get closest collision
+            app.collision_handler.sortEntries()
+
+            for i in range(app.collision_handler.getNumEntries()):
+                hit = app.collision_handler.getEntry(i)
+                if app.asteroid.nodepath.isAncestorOf(hit.getIntoNodePath()):
+                    x,y,z = app.asteroid.get_collision_pos(hit)
+                    import asteroid
+                    app.asteroid.update(x,y,z,asteroid.Empty())
+                    app.asteroid.redraw()
+                    break
+
+if __name__ == '__main__':
+    app = App()
+    app.setup()
+    app.run()
