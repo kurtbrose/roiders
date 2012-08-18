@@ -1,6 +1,7 @@
 import wx
 
 from direct.wxwidgets.WxPandaWindow import WxPandaWindow
+from pandac.PandaModules import WindowProperties
 from panda3d import core
 #suppress default window, since we will use a WxPython window
 core.loadPrcFileData('startup', 'window-type none') 
@@ -8,14 +9,7 @@ core.loadPrcFileData('startup', 'window-type none')
 import game
 base = game.App()
 base.startWx()
-#base.wxApp.Bind()
 
-#trying to get to the bottom of window events not propagating
-#base.messenger.toggleVerbose()
-import sys
-base.accept('a', lambda: sys.stdout.write('a\n'))
-base.accept('b', lambda: sys.stdout.write('b\n'))
-base.accept('c', lambda: sys.stdout.write('c\n'))
 
 #copied from Panda library
 class EmbeddedPandaWindow(wx.Window):
@@ -29,30 +23,20 @@ class EmbeddedPandaWindow(wx.Window):
             gsg = kw['gsg']
             del kw['gsg']
 
-        base.startWx()
         wx.Window.__init__(self, *args, **kw)
 
         wp = WindowProperties.getDefault()
-        if platform.system() != 'Darwin':
-            try:
-                wp.setParentWindow(self.GetHandle())
-            except OverflowError:
-                # Sheesh, a negative value from GetHandle().  This can
-                # only happen on 32-bit Windows.
-                wp.setParentWindow(self.GetHandle() & 0xffffffff)
+        #if platform.system() != 'Darwin':
+        try:
+            wp.setParentWindow(self.GetHandle())
+        except OverflowError:
+            # Sheesh, a negative value from GetHandle().  This can
+            # only happen on 32-bit Windows.
+            wp.setParentWindow(self.GetHandle() & 0xffffffff)
 
-        self.win = base.openWindow(props = wp, gsg = gsg, type = 'onscreen',
+        self.win = base.openMainWindow(props = wp, gsg = gsg, type = 'onscreen',
                                    unexposedDraw = False)
         self.Bind(wx.EVT_SIZE, self.onSize)
-
-        # This doesn't actually do anything, since wx won't call
-        # EVT_CLOSE on a child window, only on the toplevel window
-        # that contains it.
-        self.Bind(wx.EVT_CLOSE, self.__closeEvent)
-
-    def __closeEvent(self, event):
-        self.cleanup()
-        event.Skip()
 
     def cleanup(self):
         """ Parent windows should call cleanup() to clean up the
@@ -65,14 +49,36 @@ class EmbeddedPandaWindow(wx.Window):
     def onSize(self, event):
         wp = WindowProperties()
         wp.setOrigin(0, 0)
-        wp.setSize(*self.GetClientSize())
-        self.win.requestProperties(wp)
+        x,y = self.GetClientSize()
+        wp.setSize(x,y)
+        base.camLens.setAspectRatio(1.0*y/x)
+        base.win.requestProperties(wp)
         event.Skip()
 
 class MainWindow(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, -1, 'Test', size=(640, 480))
-        self.panda_panel = WxPandaWindow(parent=self)
+        wx.Frame.__init__(self, None, -1, title='roiders', size=(640, 480))
+
+        panel = wx.Panel(self)
+        fgs = wx.FlexGridSizer(2, 2, 0, 0)
+
+        spacer = wx.StaticText(panel, label="spacer")
+        button_row = wx.StaticText(panel, label="BUTTON ROW")
+        button_col = wx.StaticText(panel, label="BUTTON COL")
+
+        self.panda_panel = EmbeddedPandaWindow(
+            parent=self, pos=(0,0), style=wx.SUNKEN_BORDER)
+
+        fgs.AddMany([
+            spacer, 
+            (button_row, 1, wx.EXPAND), 
+            button_col, 
+            (self.panda_panel, 1, wx.EXPAND)])
+
+        fgs.AddGrowableRow(1,1)
+        fgs.AddGrowableCol(1,1)
+
+        panel.SetSizer(fgs)
 
         filemenu = wx.Menu()
 
@@ -86,24 +92,9 @@ class MainWindow(wx.Frame):
         self.SetMenuBar(menubar)
         self.Show(True)
 
-        base.setup()
-
 mw = MainWindow()
 
-from pandac.PandaModules import MouseWatcher
-
-print "mouseWatcherNode", base.mouseWatcherNode
-print "mouseInterfaceNode", base.mouseInterfaceNode
-print "pointerWatcherNodes", base.pointerWatcherNodes
-#base.enableMouse()
-#base.mouseWatcherNode = base.render.attachNewNode(MouseWatcher())
-print "mouseWatcherNode", base.mouseWatcherNode
-
-#trying to get to the bottom of window events not propagating
-base.taskMgr.doMethodLater(3.0, lambda task: base.messenger.send('b'), 'testb')
-#base.taskMgr.doMethodLater(3.0, lambda task: base.messenger.send('a'), 'testa')
-base.taskMgr.doMethodLater(3.0, lambda task: base.messenger.send('c'), 'testc')
-
+base.setup()
 base.run()
 
 
