@@ -29,11 +29,11 @@ class App(ShowBase.ShowBase):
         self.init_skybox()
         self.init_ui()
         self.taskMgr.add(self.camera_task, "cameraTask")
-        self.asteroid = asteroid.Asteroid.make_spheroid(asteroid.Rock)
+        self.asteroid = asteroid.Asteroid.make_spheroid(asteroid.Rock, 12)
         asteroid.tunnel(self.asteroid)
         self.asteroid.nodepath.reparentTo(self.render)
 
-        self.creatures = sum([[c() for i in range(50)] 
+        self.creatures = sum([[c() for i in range(5)] 
             for c in (creatures.Human, creatures.Robot)], []) 
         for creature in self.creatures:
             creature.pos = (0, 0, 0)

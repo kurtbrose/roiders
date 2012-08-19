@@ -59,26 +59,36 @@ class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, title='roiders', size=(640, 480))
 
-        panel = wx.Panel(self)
-        fgs = wx.FlexGridSizer(2, 2, 0, 0)
+        container_panel = wx.Panel(parent=self)
+        tool_panel = wx.Panel(parent=self)
+        info_panel = wx.Panel(parent=container_panel)
+        panda_panel = EmbeddedPandaWindow(
+            parent=container_panel, pos=(0,0), style=wx.SUNKEN_BORDER)
+        wx.StaticText(info_panel, -1, "INFO PANEL", (10, 10))
+        
+        tools_selector = wx.Notebook(parent=tool_panel)
+        dig_tools = wx.Panel(tools_selector)
+        wx.StaticText(dig_tools, -1, "Dig Tools", (20, 20))
+        build_tools = wx.Panel(tools_selector)
+        wx.StaticText(build_tools, -1, "Build Tools", (20, 20))
+        tools_selector.AddPage(dig_tools, "Dig Tools")
+        tools_selector.AddPage(build_tools, "Build Tools")
+        tools_sizer = wx.BoxSizer()
+        tools_sizer.Add(tools_selector, 1, wx.EXPAND)
+        tool_panel.SetSizer(tools_sizer)
+        
 
-        spacer = wx.StaticText(panel, label="spacer")
-        button_row = wx.StaticText(panel, label="BUTTON ROW")
-        button_col = wx.StaticText(panel, label="BUTTON COL")
+        vertical_sizer = wx.BoxSizer(wx.VERTICAL)
+        horizontal_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        horizontal_sizer.Add(panda_panel, 9, wx.EXPAND, 0)
+        horizontal_sizer.Add(info_panel, 1, wx.EXPAND, 0)
+        container_panel.SetSizer(horizontal_sizer)
 
-        self.panda_panel = EmbeddedPandaWindow(
-            parent=self, pos=(0,0), style=wx.SUNKEN_BORDER)
-
-        fgs.AddMany([
-            spacer, 
-            (button_row, 1, wx.EXPAND), 
-            button_col, 
-            (self.panda_panel, 1, wx.EXPAND)])
-
-        fgs.AddGrowableRow(1,1)
-        fgs.AddGrowableCol(1,1)
-
-        panel.SetSizer(fgs)
+        vertical_sizer.Add(container_panel, 8, wx.EXPAND, 0)
+        vertical_sizer.Add(tool_panel, 2, wx.EXPAND, 0)
+        self.SetSizer(vertical_sizer)
+        vertical_sizer.Fit(self)
+        self.Layout()
 
         filemenu = wx.Menu()
 
@@ -92,9 +102,7 @@ class MainWindow(wx.Frame):
         self.SetMenuBar(menubar)
         self.Show(True)
 
-mw = MainWindow()
-
-base.setup()
-base.run()
-
-
+if __name__ == "__main__":
+    mw = MainWindow()
+    base.setup()
+    base.run()
