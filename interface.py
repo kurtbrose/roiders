@@ -218,8 +218,11 @@ class CameraControlPanel(wx.Panel):
         }
 
     #TODO: why does the collision not move when the camera does?
+    # -- base.camera appears to not move; this is causing problems
+    # -- switch to a MVC-ish system where on-click and on-release
+    #  merely modify state variables of camera task
     def on_click(self, event):
-        pc = self.panda_app.cam
+        pc = self.panda_app.camera
         pc2 = self.panda_app.picker_node_path
         src = event.GetEventObject()
 
@@ -233,7 +236,7 @@ class CameraControlPanel(wx.Panel):
             pc.setPos(pc.getPos() + pos)
             pc2.setPos(pc.getPos() + pos)
 
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
 
 

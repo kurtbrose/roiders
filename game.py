@@ -84,6 +84,8 @@ class App(ShowBase.ShowBase):
         #re-center skybox after every camera move
         camPos = self.camera.getPos(render)
         self.skybox.setPos(camPos)
+        #TODO: add camera-movement per-frame based on variables
+        #than can be modified by UI
         return Task.cont
     
     def init_skybox(self):
@@ -105,11 +107,17 @@ class App(ShowBase.ShowBase):
         picker_node.addSolid(self.picker_ray)
         self.cTrav.addCollider(self.picker_node_path, self.collision_handler)
 
-        self.accept('a', self.mouse_ray)
+        '''
+        #debug: make a visible line segment
+        from pandac.PandaModules import LineSegs, LVecBase4f, NodePath
+        seg_drawer = LineSegs()
+        seg_drawer.setColor(LVecBase4f(1, 0, 0, 1)) #red
+        seg_drawer.moveTo(0,0,0)
+        seg_drawer.drawTo(0,100,0)
+        NodePath(seg_drawer.create()).reparentTo(self.picker_node_path)
+        '''
 
-        #testing input
-        import sys
-        self.accept('b', lambda: sys.stdout.write("b"))
+        self.accept('a', self.mouse_ray)
 
     def mouse_ray(app):
         'cast a ray from the current mouse position, find intersections'
