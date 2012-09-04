@@ -1,6 +1,13 @@
+import math
+import os, os.path
+
+CUR_DIR = os.path.dirname(os.path.abspath(__file__)) + '/'
+ASSET_DIR = CUR_DIR + 'assets/'
+ICON_DIR = ASSET_DIR + 'icons/'
+
 import wx
 
-from direct.wxwidgets.WxPandaWindow import WxPandaWindow
+from pandac.PandaModules import Quat
 from pandac.PandaModules import WindowProperties
 from panda3d import core
 #suppress default window, since we will use a WxPython window
@@ -64,11 +71,14 @@ class MainWindow(wx.Frame):
         info_panel = wx.Panel(parent=container_panel)
         panda_panel = EmbeddedPandaWindow(
             parent=container_panel, pos=(0,0), style=wx.SUNKEN_BORDER)
-        wx.StaticText(info_panel, -1, "INFO PANEL", (10, 10))
+
+        info_sizer = wx.GridSizer(5,1,3,3)
+        info_sizer.Add(wx.StaticText(info_panel, -1, "INFO PANEL"))
+        info_sizer.Add(CameraControlPanel(info_panel, base))
+        info_panel.SetSizer(info_sizer)
         
         tools_selector = wx.Notebook(parent=tool_panel)
-        dig_tools = wx.Panel(tools_selector)
-        wx.StaticText(dig_tools, -1, "Dig Tools", (20, 20))
+        dig_tools = ToolsPanel(tools_selector, [Tool(None, "dig", "dig")])
         build_tools = wx.Panel(tools_selector)
         wx.StaticText(build_tools, -1, "Build Tools", (20, 20))
         tools_selector.AddPage(dig_tools, "Dig Tools")
@@ -101,6 +111,131 @@ class MainWindow(wx.Frame):
         menubar.Append(filemenu, "&File")
         self.SetMenuBar(menubar)
         self.Show(True)
+
+TOOL_PANEL_SCALE = 32
+TPS = TOOL_PANEL_SCALE
+
+class ToolsPanel(wx.Panel):
+    def __init__(self, parent, tools):
+        wx.Panel.__init__(self, parent)
+        self.selected_tool = tools[0]
+        self.tools = tools
+        tools_sizer = wx.GridSizer(2, int(math.ceil(len(tools)/2.0)), TPS, TPS)
+
+        for tool in tools:
+            tool_button = wx.ToggleButton(
+                self, -1, size=(TPS,TPS), label=tool.name)
+            tool_button.SetToolTip(wx.ToolTip(tool.tooltip))
+            tools_sizer.Add(tool_button, 1)
+
+        self.SetSizer(tools_sizer)
+        
+class Tool(object):
+    'A simple, library-agnostic value-object class'
+    def __init__(self, icon, name, tooltip):
+        #TODO: wire this up to the code for doing stuff
+        self.icon = icon
+        self.name = name
+        self.tooltip = tooltip
+
+POS_SCALE = 30.0
+ROT_SCALE = 2.5
+
+def hpr2quat(h,p,r):
+    q = Quat()
+    q.setHpr((h,p,r))
+    return q
+
+class CameraControlPanel(wx.Panel):
+    def __init__(self, parent, panda_app):
+        wx.Panel.__init__(self, parent)
+
+        self.panda_app = panda_app
+
+        mk_btn = lambda icon: wx.BitmapButton(
+            self, -1, wx.Bitmap(ICON_DIR+'arrow_'+icon+'.png'))
+
+        self.up = mk_btn('up')
+        self.down = mk_btn('down')
+        self.left = mk_btn('left')
+        self.right = mk_btn('right')
+        self.roll_left = mk_btn('rotate_anticlockwise')
+        self.roll_right = mk_btn('rotate_clockwise')
+
+        sizer = wx.GridSizer(6, 3, 1, 1)
+        #row 1
+        sizer.Add(self.roll_left)
+        sizer.Add(self.up)
+        sizer.Add(self.roll_right)
+        #row 2
+        sizer.Add(self.left)
+        sizer.Add(wx.StaticText(self, -1, "ROT"))
+        sizer.Add(self.right)
+        #row 3
+        sizer.Add(wx.Panel(self))
+        sizer.Add(self.down)
+        sizer.Add(wx.Panel(self))
+
+        self.go_fwd = mk_btn('in')
+        self.go_back = mk_btn('out')
+        self.go_up = mk_btn('up')
+        self.go_down = mk_btn('down')
+        self.go_left = mk_btn('left')
+        self.go_right = mk_btn('right')
+
+        #row 4
+        sizer.Add(self.go_fwd)
+        sizer.Add(self.go_up)
+        sizer.Add(self.go_back)
+        #row 5
+        sizer.Add(self.go_left)
+        sizer.Add(wx.StaticText(self, -1, "POS"))
+        sizer.Add(self.go_right)
+        #row 6
+        sizer.Add(wx.Panel(self))
+        sizer.Add(self.go_down)
+        sizer.Add(wx.Panel(self))
+
+        self.SetSizer(sizer)
+
+        self.Bind(wx.EVT_BUTTON, self.on_click)
+        self.rotations = { 
+            self.up         : hpr2quat(0, ROT_SCALE,0),
+            self.down       : hpr2quat(0,-ROT_SCALE,0),
+            self.left       : hpr2quat( ROT_SCALE,0,0),
+            self.right      : hpr2quat(-ROT_SCALE,0,0),
+            self.roll_left  : hpr2quat(0,0,-ROT_SCALE),
+            self.roll_right : hpr2quat(0,0, ROT_SCALE),
+        }
+
+        self.positions = { 
+            self.go_fwd   : (0, POS_SCALE,0),
+            self.go_back  : (0,-POS_SCALE,0),
+            self.go_up    : (0,0, POS_SCALE),
+            self.go_down  : (0,0,-POS_SCALE),
+            self.go_left  : (-POS_SCALE,0,0),
+            self.go_right : ( POS_SCALE,0,0),
+        }
+
+    #TODO: why does the collision not move when the camera does?
+    def on_click(self, event):
+        pc = self.panda_app.cam
+        pc2 = self.panda_app.picker_node_path
+        src = event.GetEventObject()
+
+        rot = self.rotations.get(src)
+        if rot: #note: quaternion multiplication not commmutative
+            pc.setQuat(pc.getQuat() * rot)
+            pc2.setQuat(pc.getQuat() * rot)
+
+        pos = self.positions.get(src)
+        if pos:
+            pc.setPos(pc.getPos() + pos)
+            pc2.setPos(pc.getPos() + pos)
+
+        #import pdb; pdb.set_trace()
+
+
 
 if __name__ == "__main__":
     mw = MainWindow()

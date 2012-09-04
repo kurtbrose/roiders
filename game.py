@@ -96,18 +96,14 @@ class App(ShowBase.ShowBase):
         self.skybox = skybox
     
     def init_ui(self):
-        self.test_button = DirectButton(
-            text = ("ok!", "click!", "rolling over", "disabled"),
-            scale = 0.05)
-        self.test_button.setPos(base.a2dLeft, 0, base.a2dTop)
         self.cTrav = CollisionTraverser('ui_collision_traverser')
         self.collision_handler = CollisionHandlerQueue()
         picker_node = CollisionNode('mouse_click_ray')
-        picker_node_path = self.camera.attachNewNode(picker_node)
+        self.picker_node_path = self.camera.attachNewNode(picker_node)
         picker_node.setFromCollideMask(GeomNode.getDefaultCollideMask())
         self.picker_ray = CollisionRay()
         picker_node.addSolid(self.picker_ray)
-        self.cTrav.addCollider(picker_node_path, self.collision_handler)
+        self.cTrav.addCollider(self.picker_node_path, self.collision_handler)
 
         self.accept('a', self.mouse_ray)
 
